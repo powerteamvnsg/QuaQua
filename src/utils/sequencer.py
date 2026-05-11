@@ -12,7 +12,7 @@ def get_character_squad(page_idx, count=3, full_object=False):
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             config = json.load(f)
             roster = config.get('characters', [])
-    except:
+    except Exception:
         # Fallback roster if config is missing
         roster = [{"id": f"{i+1:02d}", "name": f"Character {i+1}", "role": "Friend", "action": "Helping"} for i in range(30)]
     

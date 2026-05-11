@@ -98,7 +98,7 @@ def wrap_text(text, font, max_width):
     for word in words:
         test_line = ' '.join(current_line + [word])
         try: w = font.getlength(test_line)
-        except: w = len(test_line) * 10
+        except Exception: w = len(test_line) * 10
         if w <= max_width:
             current_line.append(word)
         else:
@@ -124,7 +124,7 @@ class WorksheetFactory:
         try:
              with open(RIDDLES_PATH, "r") as f:
                 self.riddles = json.load(f)
-        except:
+        except Exception:
             self.riddles = {}
             
         self.all_words = []
@@ -767,7 +767,7 @@ class WorksheetFactory:
              try:
                 ov = Image.open(ov_path).convert("RGBA").resize((WIDTH, HEIGHT))
                 canvas = Image.alpha_composite(canvas, ov)
-             except: pass
+             except Exception: pass
 
         draw = ImageDraw.Draw(canvas)
         self.render_header_s2(draw, quest)

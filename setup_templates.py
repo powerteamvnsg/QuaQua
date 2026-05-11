@@ -23,7 +23,7 @@ def create_placeholder(filename, text):
     # Draw Text
     try:
         font = ImageFont.truetype("arial.ttf", 100)
-    except:
+    except Exception:
         font = ImageFont.load_default()
         
     # Center Text (Approximation)

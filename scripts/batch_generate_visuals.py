@@ -73,7 +73,7 @@ def load_font(size):
     for path in ["C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf"]:
         try:
             return ImageFont.truetype(path, size)
-        except:
+        except Exception:
             pass
     return ImageFont.load_default()
 

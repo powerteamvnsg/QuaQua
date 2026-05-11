@@ -235,7 +235,7 @@ class WorksheetPipeline:
                 label = f"Sheet {sheet.sheet_number}\n{comp}\n{sheet.story_beat}"
                 try:
                     font = ImageFont.load_default()
-                except:
+                except Exception:
                     font = None
                 draw.text((10, 10), label, fill=(100, 100, 100), font=font)
 
@@ -389,7 +389,7 @@ class WorksheetPipeline:
                 label = f"{act.activity_type}\n{act.instructions[:40]}..."
                 try:
                     font = ImageFont.load_default()
-                except:
+                except Exception:
                     font = None
                 draw.text(
                     (rect[0] + 20, rect[1] + 20),
