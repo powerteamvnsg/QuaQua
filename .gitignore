@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# LaTeX & TikZ outputs
+*.aux
+*.log
+*.out
+*.pdf
+*.dvi
+*.fls
+*.fdb_latexmk
+
+# Generated assets (worksheets, flashcards)
+output/
+generated/
+dist/assets/
+*.svg
+*.png
+*.jpg
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Google Anti-gravity IDE artifacts
+.google-ide/
+.agent-cache/
+
+# Environment & Config
+.env
+.env.local
+config/secrets/
+
+# Node/NPM (if used for any web components)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Data & Testing
+test_output/
+test_data/
+*.tmp
