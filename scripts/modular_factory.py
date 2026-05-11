@@ -1,6 +1,8 @@
 import os
 import random
 import json
+from dataclasses import dataclass
+from typing import List, Any, Optional
 from PIL import Image, ImageDraw, ImageFont
 from src.config import (
     PROJECT_ROOT, ICONS_DIR, OVERLAYS_DIR, RIDDLES_PATH,
@@ -62,7 +64,7 @@ LAYOUT = {
     "S1_PANELS": {
         "A": {"x": 250, "y": 640, "w": 976, "h": 1600},
         "B": {"x": 1266, "y": 640, "w": 976, "h": 1600},
-        "C": {"x": 2282, "y": 640, "w": 976, "h": 1350} 
+        "C": {"x": 2282, "y": 640, "w": 976, "h": 1350}
     },
     "S2_PANELS": {
         "D": {"x": 250, "y": 640, "w": 1480, "h": 1600},
@@ -112,7 +114,15 @@ def wrap_text(text, font, max_width):
 # ==========================================
 
 def render_activity_trace_stack(draw, rect, i, words, aux):
-    pass 
+    pass
+
+@dataclass
+class RenderContext:
+    canvas: Any
+    draw: Any
+    rect: dict
+    words: List[str]
+    distractors: List[str]
 
 # ==========================================
 # 4. MODULAR GENERATOR CLASS
@@ -126,11 +136,11 @@ class WorksheetFactory:
                 self.riddles = json.load(f)
         except:
             self.riddles = {}
-            
+
         self.all_words = []
         for q in self.syllabus:
             self.all_words.extend(q['words'])
-            
+
     def get_distractors(self, count, exclude=[]):
         pool = [w for w in self.all_words if w not in exclude]
         return random.sample(pool, min(count, len(pool)))
@@ -140,38 +150,38 @@ class WorksheetFactory:
         t_box = LAYOUT["HEADER"]["TITLE"]
         t_cx = t_box["x"] + t_box["w"] // 2
         t_cy = t_box["y"] + t_box["h"] // 2
-        
+
         display_name = quest['name'].replace(" Quest", "").replace(" quest", "").strip()
         gap = 10
         total_h = SIZE_TITLE_NAME + SIZE_TITLE_QUEST + gap
         start_y = t_cy - (total_h // 2)
-        
+
         draw.text((t_cx, start_y), display_name, fill="black", font=font_title_name, anchor="mt")
         draw.text((t_cx, start_y + SIZE_TITLE_NAME + gap), "Quest", fill="black", font=font_title_quest, anchor="mt")
-        
+
         # Instructions S1
         i_box = LAYOUT["HEADER"]["INSTR"]
-        i_x = i_box["x"] + 30 
+        i_x = i_box["x"] + 30
         header_start_y = i_box["y"] + 60
-        
+
         # "Today you'll learn about [FAMILY] sounds."
         part1 = "Today you'll learn about "
         part2 = quest['target'] # e.g. "at"
         part3 = " sounds."
-        
+
         draw.text((i_x, header_start_y), part1, fill=COLOR_TEXT, font=font_instr_s1, anchor="lt")
         w1 = font_instr_s1.getlength(part1)
         draw.text((i_x + w1, header_start_y - 5), part2, fill=COLOR_GREEN, font=font_instr_family_s1, anchor="lt")
         w2 = font_instr_family_s1.getlength(part2)
         draw.text((i_x + w1 + w2, header_start_y), part3, fill=COLOR_TEXT, font=font_instr_s1, anchor="lt")
         w3 = font_instr_s1.getlength(part3)
-        
+
         line_y = header_start_y + font_instr_s1.getmetrics()[0] + 10
         draw.line([(i_x, line_y), (i_x + w1 + w2 + w3, line_y)], fill=COLOR_TEXT, width=3)
-        
+
         # Body Lines
         variant = quest.get('variant_s1', 'Standard')
-        
+
         line_1 = "1. Trace the word of the picture you see."
         if variant == 'S1-A':
             # Starter: Fill in onset
@@ -189,7 +199,7 @@ class WorksheetFactory:
             # Creator: Grid + Draw
             line_1 = "1. Find the words in the puzzle."
             # We might want custom lines 2/3 for this variant too
-            
+
         body_lines = [
             line_1,
             "2. Read the word and circle the correct picture." if variant != 'S1-E' else "2. Use the list to help you find them.",
@@ -206,13 +216,13 @@ class WorksheetFactory:
             w_idx = i % len(words)
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
-            
+
             # Icon Left
             icon_x = rect['x'] + (rect['w'] * 0.30)
             icon_y = row_cy - 40
             icon = get_icon_image(words[w_idx])
             if icon: paste_centered(canvas, icon, int(icon_x), icon_y, 180)
-            
+
             # Trace Right
             trace_text = words[w_idx].upper()
             trace_x = rect['x'] + (rect['w'] * 0.70)
@@ -220,7 +230,7 @@ class WorksheetFactory:
             # Center gap on icon_y
             for t_off in [-line_gap // 2, line_gap // 2]:
                 draw.text((trace_x, icon_y + t_off), trace_text, fill=COLOR_TRACE, font=font_trace, anchor="mm")
-                
+
             # Trace Below (Aligned under icon)
             draw.text((int(icon_x), row_cy + 160), trace_text, fill=COLOR_TRACE, font=font_trace, anchor="mm")
 
@@ -231,49 +241,49 @@ class WorksheetFactory:
             w_idx = i % len(words)
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
-            
+
             # Icon Left
             icon_x = rect['x'] + (rect['w'] * 0.30)
             icon = get_icon_image(words[w_idx])
             if icon: paste_centered(canvas, icon, int(icon_x), row_cy, 180)
-            
+
             # Text Right: "_at"
             word = words[w_idx].lower()
             if len(word) > 1:
                 # Remove first char
-                stem = word[1:] 
+                stem = word[1:]
                 display_text = f"_{stem}"
             else:
                 display_text = "_"
-                
+
             text_x = rect['x'] + (rect['w'] * 0.70)
-            
+
             # Draw the stem part in Black
             # We want the underscore to be a writing line.
             # Let's draw a literal line for the first char and then the text.
-            
-            # Measure specific parts? 
+
+            # Measure specific parts?
             # Simple approach: Draw "_at" using the trace font or label font?
             # Instructions say "Write 'b', 'c'". So we provide the line.
-            
+
             # Using trace font for the stem? Or solid black label font?
             # "Student writes". So we show the stem clearly.
-            
+
             # Draw stem text aligned slightly right
             stem_font = font_trace # Keep consistent style or use solid?
             # Let's use solid for the known part if we want them to focus on the missing part.
             # But the user might want tracing style for the stem?
             # Plan says: "Display _at... Student writes 'c'".
             # Let's use the solid Label font for the provided part to show it's "fixed".
-            
+
             draw.text((text_x, row_cy), stem, fill="black", font=font_label, anchor="lm")
-            
+
             # Draw writing line before the stem
             stem_w = font_label.getlength(stem)
             line_end_x = text_x - 10
             line_start_x = line_end_x - 100
             line_y = row_cy + 30 # Baseline approx
-            
+
             draw.line([(line_start_x, line_y), (line_end_x, line_y)], fill="black", width=5)
 
     def render_panel_a_scrambler(self, canvas, draw, rect, words):
@@ -282,12 +292,12 @@ class WorksheetFactory:
             w_idx = i % len(words)
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
-            
+
             # Icon Left
             icon_x = rect['x'] + (rect['w'] * 0.30)
             icon = get_icon_image(words[w_idx])
             if icon: paste_centered(canvas, icon, int(icon_x), row_cy, 180)
-            
+
             # Scrambled Text Right
             word = words[w_idx].upper()
             chars = list(word)
@@ -295,10 +305,10 @@ class WorksheetFactory:
             if len(chars) > 1:
                 while "".join(chars) == word: random.shuffle(chars)
             scrambled = "  ".join(chars)
-            
+
             text_x = rect['x'] + (rect['w'] * 0.70)
             draw.text((text_x, row_cy), scrambled, fill="black", font=font_label, anchor="mm")
-            
+
             # Writing Line Below (Centered)
             panel_cx = rect['x'] + (rect['w'] // 2)
             line_y = row_cy + 160
@@ -310,19 +320,19 @@ class WorksheetFactory:
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
             panel_cx = rect['x'] + (rect['w'] // 2)
-            
+
             w_idx = i % len(words)
             target = words[w_idx]
-            
+
             # Word Top
             label_y = row_cy - 100
             draw.text((panel_cx, label_y), target.upper(), fill="black", font=font_label, anchor="mm")
-            
+
             # Icons Below (1 Target, 1 Distractor)
             d = random.choice([x for x in distractors if x != target])
             opts = [target, d]
             random.shuffle(opts)
-            
+
             spacing = 220
             icons_y = row_cy + 80
             for j, opt in enumerate(opts):
@@ -336,7 +346,7 @@ class WorksheetFactory:
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
             panel_cx = rect['x'] + (rect['w'] // 2)
-            
+
             # 2 Family Words, 1 Distractor
             w_idx = i % len(words)
             target = words[w_idx]
@@ -344,12 +354,12 @@ class WorksheetFactory:
             others = [w for w in words if w != target]
             if not others: others = [target] # Fallback
             partner = random.choice(others)
-            
+
             d = random.choice([x for x in distractors if x not in words])
-            
+
             opts = [target, partner, d]
             random.shuffle(opts)
-            
+
             # Display 3 icons (Triangle or Row?)
             # Row fits well
             spacing = 220
@@ -364,7 +374,7 @@ class WorksheetFactory:
         # 1. Generate Grid
         grid_size = 4
         grid = [['' for _ in range(grid_size)] for _ in range(grid_size)]
-        
+
         # Place words
         for word in words:
             w = word.upper()
@@ -396,37 +406,37 @@ class WorksheetFactory:
                         for k in range(len(w)): grid[r+k][c] = w[k]
                         placed = True
                 attempts += 1
-                
+
         # Fill empty
         ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         for r in range(grid_size):
             for c in range(grid_size):
                 if grid[r][c] == '':
                     grid[r][c] = random.choice(ALPHABET)
-                    
+
         # 2. Render Grid
         # Calculate cell size
         margin = 60
         g_w = rect['w'] - (2 * margin)
         cell_size = g_w // grid_size
         start_x = rect['x'] + margin
-        
+
         # Vertical centering
         g_h = cell_size * grid_size
         start_y = rect['y'] + (rect['h'] - g_h) // 2
-        
+
         for r in range(grid_size):
             for c in range(grid_size):
                 cx = start_x + (c * cell_size) + (cell_size // 2)
                 cy = start_y + (r * cell_size) + (cell_size // 2)
-                
+
                 # Draw cell border (optional, maybe light gray)
                 x1 = start_x + (c * cell_size)
                 y1 = start_y + (r * cell_size)
                 x2 = x1 + cell_size
                 y2 = y1 + cell_size
                 draw.rectangle((x1, y1, x2, y2), outline=(200, 200, 200), width=2)
-                
+
                 # Draw Letter
                 draw.text((cx, cy), grid[r][c], fill="black", font=font_label, anchor="mm")
 
@@ -437,16 +447,16 @@ class WorksheetFactory:
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
             panel_cx = rect['x'] + (rect['w'] // 2)
-            
+
             # Icon Left, Word Right
             # Or Stacked?
             # Standard look: Icon Left ~30%, Word Right ~70%
             icon_x = rect['x'] + (rect['w'] * 0.30)
             text_x = rect['x'] + (rect['w'] * 0.70)
-            
+
             ic = get_icon_image(words[w_idx])
             if ic: paste_centered(canvas, ic, int(icon_x), row_cy, 160)
-            
+
             draw.text((text_x, row_cy), words[w_idx].upper(), fill="black", font=font_label, anchor="mm")
 
     def render_panel_c_draw(self, canvas, draw, rect, words):
@@ -455,62 +465,62 @@ class WorksheetFactory:
             w_idx = i % len(words)
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
-            
+
             # Layout: Word on Left (small), Big Empty Box on Right
             word_x = rect['x'] + (rect['w'] * 0.20)
             draw.text((word_x, row_cy), words[w_idx].upper(), fill="black", font=font_label, anchor="mm")
-            
+
             # Drawing Box
             box_x = rect['x'] + (rect['w'] * 0.45)
             box_w = rect['w'] * 0.45
             box_h = row_h * 0.8
             box_y = row_cy - (box_h // 2)
-            
+
             draw.rectangle(
-                [box_x, box_y, box_x + box_w, box_y + box_h], 
+                [box_x, box_y, box_x + box_w, box_y + box_h],
                 outline="black", width=3
             )
             # Maybe dashed? standard PIL doesn't do dashed lines easily for rects without plugin/logic
             # Solid box is fine for drawing instructions.
 
-    def render_panel_b_standard(self, canvas, draw, rect, words, distractors):
+    def render_panel_b_standard(self, ctx: RenderContext):
         """Standard Circle Correct Activity"""
         for i in range(3):
-            row_h = rect['h'] // 3
-            row_cy = rect['y'] + (i * row_h) + (row_h // 2)
-            panel_cx = rect['x'] + (rect['w'] // 2)
-            
-            target = words[(i+1) % len(words)] # Shifted target
-            
+            row_h = ctx.rect['h'] // 3
+            row_cy = ctx.rect['y'] + (i * row_h) + (row_h // 2)
+            panel_cx = ctx.rect['x'] + (ctx.rect['w'] // 2)
+
+            target = ctx.words[(i+1) % len(ctx.words)] # Shifted target
+
             # Word Top
             label_y = row_cy - 100
-            draw.text((panel_cx, label_y), target.upper(), fill="black", font=font_label, anchor="mm")
-            
+            ctx.draw.text((panel_cx, label_y), target.upper(), fill="black", font=font_label, anchor="mm")
+
             # Icons Below
-            d = random.choice([x for x in distractors if x != target])
+            d = random.choice([x for x in ctx.distractors if x != target])
             opts = [target, d]
             random.shuffle(opts)
-            
+
             spacing = 220
             icons_y = row_cy + 80
             for j, opt in enumerate(opts):
                 off_x = (j - 0.5) * spacing
                 ic = get_icon_image(opt)
-                if ic: paste_centered(canvas, ic, int(panel_cx + off_x), icons_y, 160)
+                if ic: paste_centered(ctx.canvas, ic, int(panel_cx + off_x), icons_y, 160)
 
     def render_panel_c_standard(self, canvas, draw, rect, words):
         """Standard Match Activity"""
         for i in range(3):
             row_h = rect['h'] // 3
             row_cy = rect['y'] + (i * row_h) + (row_h // 2)
-            
+
             mw = words[:3]
             mi = list(words[:3])
             random.shuffle(mi)
-            
+
             word_x = rect['x'] + (rect['w'] * 0.15)
             icon_x = rect['x'] + (rect['w'] * 0.85)
-            
+
             draw.text((word_x, row_cy), mw[i].upper(), fill="black", font=font_label, anchor="mm")
             ic = get_icon_image(mi[i])
             if ic: paste_centered(canvas, ic, int(icon_x), row_cy, 150)
@@ -519,37 +529,41 @@ class WorksheetFactory:
         print(f"Generating Modular S1: {quest['name']}")
         canvas = Image.new("RGBA", (WIDTH, HEIGHT), BG_COLOR)
         draw = ImageDraw.Draw(canvas)
-        
+
         # Draw Background Panels
         for k in ["A", "B", "C"]:
             p = LAYOUT["S1_PANELS"][k]
             draw.rounded_rectangle(
-                [p['x'], p['y'], p['x']+p['w'], p['y']+p['h']], 
+                [p['x'], p['y'], p['x']+p['w'], p['y']+p['h']],
                 radius=60, outline=COLOR_GREEN, width=20
             )
-            
+
         # Draw Activities (Modular Calls)
         distractors = self.get_distractors(10, exclude=quest['words'])
-        
+
         # Check for Variants (Mock logic for now, or real if passed)
         # You can eventually pass this in 'quest' dict from init_brain.py
         variant = quest.get('variant_s1', 'Standard') # Default to Standard
-        
+
         if variant == 'S1-A':
             self.render_panel_a_starter(canvas, draw, LAYOUT["S1_PANELS"]["A"], quest['words'])
-            self.render_panel_b_standard(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            ctx = RenderContext(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            self.render_panel_b_standard(ctx)
             self.render_panel_c_standard(canvas, draw, LAYOUT["S1_PANELS"]["C"], quest['words'])
         elif variant == 'S1-B':
             self.render_panel_a_scrambler(canvas, draw, LAYOUT["S1_PANELS"]["A"], quest['words'])
-            self.render_panel_b_standard(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            ctx = RenderContext(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            self.render_panel_b_standard(ctx)
             self.render_panel_c_standard(canvas, draw, LAYOUT["S1_PANELS"]["C"], quest['words'])
         elif variant == 'S1-C':
             self.render_panel_a_selector(canvas, draw, LAYOUT["S1_PANELS"]["A"], quest['words'], distractors)
-            self.render_panel_b_standard(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            ctx = RenderContext(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            self.render_panel_b_standard(ctx)
             self.render_panel_c_standard(canvas, draw, LAYOUT["S1_PANELS"]["C"], quest['words'])
         elif variant == 'S1-D':
             self.render_panel_a_logician(canvas, draw, LAYOUT["S1_PANELS"]["A"], quest['words'], distractors)
-            self.render_panel_b_standard(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            ctx = RenderContext(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            self.render_panel_b_standard(ctx)
             self.render_panel_c_standard(canvas, draw, LAYOUT["S1_PANELS"]["C"], quest['words'])
         elif variant == 'S1-E':
             self.render_panel_a_grid(canvas, draw, LAYOUT["S1_PANELS"]["A"], quest['words'])
@@ -557,9 +571,10 @@ class WorksheetFactory:
             self.render_panel_c_draw(canvas, draw, LAYOUT["S1_PANELS"]["C"], quest['words'])
         else:
             self.render_panel_a_standard(canvas, draw, LAYOUT["S1_PANELS"]["A"], quest['words'])
-            self.render_panel_b_standard(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            ctx = RenderContext(canvas, draw, LAYOUT["S1_PANELS"]["B"], quest['words'], distractors)
+            self.render_panel_b_standard(ctx)
             self.render_panel_c_standard(canvas, draw, LAYOUT["S1_PANELS"]["C"], quest['words'])
-        
+
         # Overlay - Paste this BEFORE header!
         ov_path = os.path.join(OVERLAYS_DIR, f"overlay_{quest['id']}.png")
         if os.path.exists(ov_path):
@@ -569,12 +584,12 @@ class WorksheetFactory:
                 canvas = Image.alpha_composite(canvas, ov)
             except Exception as e:
                 print(f"Overlay error: {e}")
-        
+
         # Draw Header LAST (So it sits on top of overlay)
         # Re-create draw object because canvas is now a new object/reference
         draw = ImageDraw.Draw(canvas)
         self.render_header_s1(draw, quest)
-            
+
         if not os.path.exists(OUTPUT_DIR): os.makedirs(OUTPUT_DIR)
         canvas.save(os.path.join(OUTPUT_DIR, f"{quest['id']}_Sheet1_Modular.png"))
 
@@ -582,25 +597,25 @@ class WorksheetFactory:
         t_box = LAYOUT["HEADER"]["TITLE"]
         t_cx = t_box["x"] + t_box["w"] // 2
         t_cy = t_box["y"] + t_box["h"] // 2
-        
+
         display_name = quest['name'].replace(" Quest", "").replace(" quest", "").strip()
         gap = 10
         total_h = SIZE_TITLE_NAME + SIZE_TITLE_QUEST + gap
         start_y = t_cy - (total_h // 2)
-        
+
         draw.text((t_cx, start_y), display_name, fill="black", font=font_title_name, anchor="mt")
         draw.text((t_cx, start_y + SIZE_TITLE_NAME + gap), "Quest", fill="black", font=font_title_quest, anchor="mt")
-        
+
         i_box = LAYOUT["HEADER"]["INSTR"]
         instr_text = "It's time to get your scissors and glue ready! Cut-out the pictures from the cutout page and glue them in the correct box!"
-        
+
         wrapped = wrap_text(instr_text, font_instr_s1, i_box["w"])
         draw.multiline_text((i_box["x"], i_box["y"]), wrapped, fill=COLOR_TEXT, font=font_instr_s1, spacing=15)
 
 
     def render_panel_d_riddles(self, canvas, draw, rect, words, distractors):
         draw.text((rect['x'] + rect['w']//2, rect['y'] + 60), "Read and Solve", fill="black", font=font_label, anchor="mt")
-        start_y = rect['y'] + 200; gap = 400 
+        start_y = rect['y'] + 200; gap = 400
         for i, word in enumerate(words):
             y_pos = start_y + (i * gap)
             riddle = self.riddles.get(word, f"I am a {word}.")
@@ -672,71 +687,71 @@ class WorksheetFactory:
          # AND REMOVE the 'if variant == Classic' check.
          # Wait, looking at the user's prompt code... it HAS 'render_header_s1' logic but DIFFERENT coordinates.
          # User's code prompt TITLE x:280, y:210. My code has x:250 y:120.
-         
+
          # The user provided a FULL FILE CONTENT in the prompt block.
          # They want me to use THAT code but ensure it matches "what I have done so far" (my fixes).
          # My fixes: Height of Panel C (1350), Overlay ordering fix, S1 instruction Logic fix.
          # The User's prompt code HAS the Panel C 1350 fix comment. HAS the S1-A/B/C/D logic.
          # BUT it has different Header coordinates?
          # And it has `render_header_s2`, which matches my S1 logic?
-         
+
          # The user says: "search for if variant == 'Classic': and delete those lines so Sheet 2 generates."
          # In the prompt code, `generate_sheet_2` has:
          # if variant == 'S2-A': ... elif variant == 'S2-B': ... else: # CLASSIC MODE
-         
+
          # If I delete `else` (Classic), then if `variant` is neither, nothing happens?
          # "delete those lines so Sheet 2 generates."
          # Maybe they mean: Force S2 to always generate? OR remove the constraint preventing it?
          # Actually, the prompt code has:
          # if variant == 'S2-A': ... elif variant == 'S2-B': ... else: # Classic logic.
-         
+
          # If I delete `if variant == 'Classic'`, maybe they mean the check in a loop?
          # But in `generate_sheet_2`, logic handles Classic in `else`.
-         
+
          # Wait! "search for if variant == 'Classic': and delete those lines".
          # Maybe in the `if __name__ == "__main__":` block which is empty in the prompt?
          # No.
-         
+
          # Let's look at `render_panel_d_classic`...
-         
+
          # Let's look at `generate_sheet_2` in the prompt code.
          # It renders logic for variants.
-         
+
          # I will adopt the user's code, apply my overlay fix (if missing in prompt code), and ensure fonts/paths match.
-         
+
          # Prompt code Overlay Logic:
          # ov_path = ...
          # if exists: try: canvas = Image.alpha_composite(canvas, ov) ...
          # This matches my fix!
-         
+
          # Prompt Code Header S1 Logic:
          # `render_header_s1`: Uses `i_box["x"]` etc. Draws multiline text.
          # My `render_header_s1` does manual line drawing for "Today you'll..."
-         # The prompt code attempts to use `multiline_text`? 
+         # The prompt code attempts to use `multiline_text`?
          # Wait, the prompt code logic for Instructions:
          # Draws "Today you'll..." manually (Part 1, 2, 3), then Line, then 'body_lines'.
          # This matches my logic.
-         
+
          # Prompt Code Panel C Height: 1350. Matches.
-         
+
          # The user wants me to REMOVE `if variant == 'Classic'`.
          # The code has `variant = quest.get('variant_s2', 'Classic')`.
          # Then `if variant == 'S2-A': ... elif ... else:`.
          # If I remove the check, how does it handle defaults?
          # "delete those lines so Sheet 2 generates" -> Maybe they imply existing code blocked Classic?
          # Or they want Classic to be the `else` block and just run?
-         
+
          # I think the user is providing a new script and wants me to save it, but REMOVE some block they dislike.
          # I will just write the provided code to `modular_factory.py`, ensuring `generate_sheet_2` works.
          # I will ensure `if __name__` block runs the generation.
-         
+
     pass
 
     def generate_sheet_2(self, quest):
         print(f"Generating Modular S2: {quest['name']}")
         canvas = Image.new("RGBA", (WIDTH, HEIGHT), BG_COLOR)
         draw = ImageDraw.Draw(canvas)
-        
+
         # GREEN BORDERS & UNLOCKED CLASSIC
         for k in ["D", "E"]:
             p = LAYOUT["S2_PANELS"][k]
@@ -744,7 +759,7 @@ class WorksheetFactory:
 
         distractors = self.get_distractors(10, exclude=quest['words'])
         variant = quest.get('variant_s2', 'Classic')
-        
+
         if variant == 'S2-A':
             self.render_panel_d_riddles(canvas, draw, LAYOUT["S2_PANELS"]["D"], quest['words'], distractors)
             self.render_panel_e_wordsearch(canvas, draw, LAYOUT["S2_PANELS"]["E"], quest['words'])
@@ -757,7 +772,7 @@ class WorksheetFactory:
             rect_d = LAYOUT["S2_PANELS"]["D"]
             draw.text((rect_d['x'] + rect_d['w']//2, rect_d['y'] + 50), "Words ending in", fill="black", font=font_label, anchor="mt")
             draw.text((rect_d['x'] + rect_d['w']//2, rect_d['y'] + 180), f"-{quest['target']}", fill=COLOR_GREEN, font=font_family, anchor="mt")
-            
+
             # Panel E: Other Words
             rect_e = LAYOUT["S2_PANELS"]["E"]
             draw.text((rect_e['x'] + rect_e['w']//2, rect_e['y'] + 50), "Other Words", fill="black", font=font_label, anchor="mt")
@@ -771,7 +786,7 @@ class WorksheetFactory:
 
         draw = ImageDraw.Draw(canvas)
         self.render_header_s2(draw, quest)
-        
+
         if not os.path.exists(OUTPUT_DIR): os.makedirs(OUTPUT_DIR)
         canvas.save(os.path.join(OUTPUT_DIR, f"{quest['id']}_Sheet2_Modular.png"))
 
