@@ -1,0 +1,129 @@
+{
+    "meta": {
+        "version": "2.1",
+        "description": "K2 Worksheet Overlay Layout Schema - Exact Photoshop Coordinates",
+        "canvas": {
+            "width": 3508,
+            "height": 2480
+        },
+        "coordinate_system": "top_left_origin",
+        "source": "Photoshop layer export"
+    },
+    "overlay_zones": {
+        "title_banner_frame": {
+            "description": "Outer decorative frame for title banner",
+            "x": 123,
+            "y": 63,
+            "width": 1307,
+            "height": 492
+        },
+        "title_banner_text_area": {
+            "description": "Inner text area within title banner",
+            "x": 230,
+            "y": 127,
+            "width": 1073,
+            "height": 305
+        },
+        "instruction_box": {
+            "description": "Blue instruction box container",
+            "x": 1609,
+            "y": 79,
+            "width": 1645,
+            "height": 445
+        },
+        "instruction_text_area": {
+            "description": "Text area within instruction box",
+            "x": 1682,
+            "y": 143,
+            "width": 1420,
+            "height": 321
+        },
+        "portrait": {
+            "description": "Strawberry King circular portrait",
+            "x": 3053,
+            "y": 179,
+            "width": 377,
+            "height": 377
+        },
+        "character_scene": {
+            "description": "Corner scene where mascots interact - focal point",
+            "x": 2746,
+            "y": 1763,
+            "width": 762,
+            "height": 717
+        },
+        "bottom_frame_strip": {
+            "description": "Horizontal bottom frame - decorative ground extending from scene",
+            "x": 0,
+            "y": 2215,
+            "width": 2751,
+            "height": 265
+        },
+        "right_frame_strip": {
+            "description": "Vertical right frame - decorative border extending from scene",
+            "x": 3238,
+            "y": 0,
+            "width": 270,
+            "height": 1776
+        }
+    },
+    "fixed_components": {
+        "instruction_box": {
+            "path": "data/assets/overlay_components/instruction_box_full.png",
+            "position": {
+                "x": 1609,
+                "y": 79
+            },
+            "size": {
+                "width": 1645,
+                "height": 445
+            }
+        }
+    },
+    "generation_specs": {
+        "title_banner": {
+            "output_size": {
+                "width": 1307,
+                "height": 492
+            },
+            "position": {
+                "x": 123,
+                "y": 63
+            },
+            "prompt_notes": "Decorative themed frame with empty center for text"
+        },
+        "character_scene": {
+            "output_size": {
+                "width": 762,
+                "height": 717
+            },
+            "position": {
+                "x": 2746,
+                "y": 1763
+            },
+            "prompt_notes": "2 mascot characters interacting, themed environment"
+        },
+        "bottom_frame": {
+            "output_size": {
+                "width": 2751,
+                "height": 265
+            },
+            "position": {
+                "x": 0,
+                "y": 2215
+            },
+            "prompt_notes": "Ground/floor extending left from character scene"
+        },
+        "right_frame": {
+            "output_size": {
+                "width": 270,
+                "height": 1776
+            },
+            "position": {
+                "x": 3238,
+                "y": 0
+            },
+            "prompt_notes": "Vertical decoration extending up from character scene"
+        }
+    }
+}

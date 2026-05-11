@@ -1,0 +1,39 @@
+{
+    "pirate": {
+        "style_tokens": "Kawaii vector art, thick black outlines, flat colors, white background",
+        "banner_prompt": "A rustic pirate-themed wooden sign banner, vector style",
+        "story_sequence": [
+            {
+                "phase": "01_voyage",
+                "description": "The Voyage Begins",
+                "frame_prompt": "A kawaii vector worksheet frame composition occupying only the bottom and right edges. The top and left edges are pure white space. Along the bottom edge, a cute pirate ship sails on rolling blue waves. Captain Blueberry Pirate looks through a telescope at the bow, and Tomato Pirate waves from the stern. The ship's tall mast, billowing sails, and a crow's nest with a lookout flag form the vertical border extending up the right edge. Thick outlines, flat colors."
+            },
+            {
+                "phase": "02_island",
+                "description": "The Secret Island",
+                "frame_prompt": "A kawaii vector worksheet frame composition occupying only the bottom and right edges. The top and left edges are pure white space. Along the bottom edge, the pirate ship is anchored near a tropical shore. Captain Blueberry and Tomato Pirate are in a small rowboat heading toward a white sandy beach with palm trees. Deep jungle vines and a tall volcano in the distance form the vertical border up the right edge. Thick outlines, flat colors."
+            },
+            {
+                "phase": "03_hunt",
+                "description": "The Treasure Hunt",
+                "frame_prompt": "A kawaii vector worksheet frame composition occupying only the bottom and right edges. The top and left edges are pure white space. Along the bottom edge, a detailed treasure map is spread across the sand with an 'X' marking a spot near a large skull-shaped cave. Captain Blueberry and Tomato Pirate are standing near the cave entrance with a pickaxe and shovel. Hanging jungle creepers and tropical birds form the vertical border up the right edge. Thick outlines, flat colors."
+            },
+            {
+                "phase": "04_reward",
+                "description": "The Celebration",
+                "frame_prompt": "A kawaii vector worksheet frame composition occupying only the bottom and right edges. The top and left edges are pure white space. Along the bottom edge, an open treasure chest overflows with gold coins, jewels, and a golden crown. Captain Blueberry and Tomato Pirate are dancing together in celebration. Exploding colorful fireworks and a tropical sunset glow form the vertical border up the right edge. Thick outlines, flat colors."
+            }
+        ]
+    },
+    "space": {
+        "style_tokens": "Professional Kawaii illustration style. Flat Matte illustration. Thin black outlines. Small black dot eyes with tiny white reflection dot. Solid white background.",
+        "banner_prompt": "A professional wide-aspect 3:1 horizontal metal sign banner for a space-themed worksheet. Silver metallic texture composed of flat vector shapes.",
+        "story_sequence": [
+            {
+                "phase": "01_launch",
+                "description": "The Launch",
+                "frame_prompt": "A kawaii vector worksheet frame occupying only the bottom and right edges. A sleek modern rocket launching from a pads on the bottom edge with huge clouds of smoke. Stars and planets forming the right border."
+            }
+        ]
+    }
+}
