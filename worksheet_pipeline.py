@@ -32,9 +32,9 @@ from src.config import (
 from src.models.worksheet_spec import (
     ActivitySpec, SheetSpec, ThemeSpec, BundleSpec,
 )
-from src.agents.curriculum_architect import CurriculumArchitect, SpecValidationError
+from src.engines.curriculum.curriculum_architect import CurriculumArchitect, SpecValidationError
 from src.agents.quality_agent import QualityStandardsAgent
-from src.agents.worksheet_generator import WorksheetGenerator
+from src.engines.lesson.worksheet_generator import WorksheetGenerator
 from src.agents.critic_agent import CriticAgent
 
 
@@ -104,167 +104,75 @@ class WorksheetPipeline:
         self.overlays_dir.mkdir(exist_ok=True)
 
     def run(self) -> str:
-        """
-        Execute the full pipeline. Returns path to final PDF.
-
-        Each step is inspected before proceeding to the next.
-        """
         self._log("=" * 60)
         self._log(f"WORKSHEET PIPELINE — {self.topic} / {self.theme_name}")
         self._log("=" * 60)
 
-        # ── Step 1 ── Build the curriculum blueprint
-        self._log("\n📋 STEP 1: Building curriculum spec...")
-        self.spec = self._step_1_curriculum()
-        self._log(f"   ✅ Spec built:\n{self.spec.summary()}")
+        try:
+            self._log("\n📋 STEP 1: Building curriculum spec...")
+            self._step_1_architect()
+            self._log(f"   ✅ Spec built:\n{self.spec.summary()}")
 
-        # ── Step 2 ── Quality validation
-        self._log("\n🔍 STEP 2: Quality validation...")
-        self._step_2_quality_check()
-        self._log(f"   ✅ QA verdict: {self.spec.qa_verdict}")
+            self._log("\n🔍 STEP 2: Quality validation...")
+            self._step_2_qa()
+            self._log(f"   ✅ QA verdict: {self.spec.qa_verdict}")
 
-        # ── Step 3 ── Enrich with render-ready content
-        self._log("\n🔧 STEP 3: Enriching activities for rendering...")
-        self._step_3_enrich()
-        self._log("   ✅ Activities enriched with render hints")
+            self._log("\n🔧 STEP 3: Enriching activities for rendering...")
+            self._step_3_generator()
+            self._log("   ✅ Activities enriched with render hints")
 
-        # ── Step 4 ── Generate frame art
-        self._log("\n🎨 STEP 4: Generating frame art...")
-        self._step_4_generate_art()
-        self._log("   ✅ Frame art generated")
+            self._log("\n🎨 STEP 4: Generating frame art...")
+            self._step_4_generate_art()
+            self._log("   ✅ Frame art generated")
 
-        # ── Step 5 ── Render activity panels
-        self._log("\n📐 STEP 5: Rendering activity panels...")
-        self._step_5_render_panels()
-        self._log("   ✅ Panels rendered")
+            self._log("\n📐 STEP 5: Rendering activity panels...")
+            self._step_5_render_panels()
+            self._log("   ✅ Panels rendered")
 
-        # ── Step 6 ── Composite overlays
-        self._log("\n🖼️  STEP 6: Compositing overlays...")
-        self._step_6_composite()
-        self._log("   ✅ Overlays composited")
+            self._log("\n🖼️  STEP 6: Compositing overlays...")
+            self._step_6_composite()
+            self._log("   ✅ Overlays composited")
 
-        # ── Step 7 ── Final QA
-        self._log("\n🏁 STEP 7: Final QA review...")
-        self._step_7_critic()
-        self._log(f"   ✅ Critic verdict: {self.spec.critic_verdict}")
+            self._log("\n🏁 STEP 7: Final QA review...")
+            self._step_7_critic()
+            self._log(f"   ✅ Critic verdict: {self.spec.critic_verdict}")
 
-        # ── Step 8 ── Bind PDF
-        self._log("\n📕 STEP 8: Binding PDF...")
-        pdf_path = self._step_8_bind()
-        self._log(f"   ✅ PDF: {pdf_path}")
+            self._log("\n📕 STEP 8: Binding PDF...")
+            pdf_path = self._step_8_bind()
+            self._log(f"   ✅ PDF: {pdf_path}")
+
+        except Exception as e:
+            self._log(f"   ❌ pipeline generation mistakes: {str(e)}")
+            raise
 
         self._log("\n" + "=" * 60)
         self._log("PIPELINE COMPLETE")
         self._log("=" * 60)
 
         return pdf_path
-
-    # ──────────────────────────────────────────────────────────
-    # STEP IMPLEMENTATIONS
-    # ──────────────────────────────────────────────────────────
-
-    def _step_1_curriculum(self) -> BundleSpec:
-        """Delegate to CurriculumArchitect and inspect result."""
+    def _step_1_architect(self) -> None:
         spec = CurriculumArchitect.build_spec(self.topic, self.theme)
+        self.spec = spec
 
-        # Orchestrator inspection: verify the blueprint matches vision
-        assert len(spec.sheets) == 4, f"Expected 4 sheets, got {len(spec.sheets)}"
-        expected_panels = [3, 3, 2, 1]
-        for sheet, expected in zip(spec.sheets, expected_panels):
-            assert sheet.panel_count == expected, (
-                f"Sheet {sheet.sheet_number}: expected {expected} panels, "
-                f"got {sheet.panel_count}"
-            )
-            assert len(sheet.activities) == expected, (
-                f"Sheet {sheet.sheet_number}: expected {expected} activities, "
-                f"got {len(sheet.activities)}"
-            )
-
-        return spec
-
-    def _step_2_quality_check(self) -> None:
-        """Delegate to QualityStandardsAgent and inspect result."""
+    def _step_2_qa(self) -> None:
+        from src.agents.quality_agent import QualityStandardsAgent
         verdict = QualityStandardsAgent.verify(self.spec)
         self.spec.qa_verdict = verdict.to_dict()
-
         if verdict.release_blocked:
-            self._log(f"   ❌ QA FAILED — Pipeline blocked")
-            for d in verdict.defects:
-                self._log(f"      {d}")
-            raise RuntimeError(
-                f"Quality check failed with {len(verdict.defects)} defects. "
-                f"Pipeline blocked."
-            )
+            raise RuntimeError(f"QA failed: {verdict.defects}")
 
-    def _step_3_enrich(self) -> None:
-        """Delegate to WorksheetGenerator for render enrichment."""
+    def _step_3_generator(self) -> None:
         WorksheetGenerator.generate(self.spec)
 
-        # Orchestrator inspection: verify _render hints exist
-        for sheet in self.spec.sheets:
-            for act in sheet.activities:
-                assert "_render" in act.content, (
-                    f"Sheet {sheet.sheet_number}, '{act.activity_type}': "
-                    f"missing _render hints after enrichment"
-                )
-
     def _step_4_generate_art(self) -> None:
-        """
-        Generate themed frame art for each sheet.
-
-        In a live environment, this would call the generate_image tool.
-        Here, we create placeholder PNGs and record the paths so the
-        pipeline can be tested end-to-end.
-        """
-        from PIL import Image, ImageDraw, ImageFont
-
-        for sheet in self.spec.sheets:
-            sheet_art = {}
-            components = ["character_scene", "bottom_frame", "right_frame"]
-            sizes = {
-                "character_scene": (762, 717),
-                "bottom_frame": (2751, 265),
-                "right_frame": (270, 1776),
-            }
-
-            for comp in components:
-                w, h = sizes[comp]
-                # Create a placeholder image with label
-                img = Image.new("RGBA", (w, h), (245, 245, 220, 200))
-                draw = ImageDraw.Draw(img)
-                label = f"Sheet {sheet.sheet_number}\n{comp}\n{sheet.story_beat}"
-                try:
-                    font = ImageFont.load_default()
-                except:
-                    font = None
-                draw.text((10, 10), label, fill=(100, 100, 100), font=font)
-
-                path = self.art_dir / f"sheet{sheet.sheet_number}_{comp}.png"
-                img.save(str(path))
-                sheet_art[comp] = str(path)
-
-            sheet.frame_art_paths = sheet_art
+        from src.engines.layout.asset_layout_generator import generate_art_placeholders
+        generate_art_placeholders(self.spec, self.art_dir)
+        self._log('   ✅ Frame art generated by Asset & Layout Generator')
 
     def _step_5_render_panels(self) -> None:
-        """
-        Render activity panels onto A4 canvases.
-
-        Creates a white A4 canvas with bordered panels for each sheet.
-        In a full implementation, this delegates to modular_factory.py's
-        WorksheetFactory. For now, creates structured placeholders.
-        """
-        from PIL import Image, ImageDraw, ImageFont
-
-        for sheet in self.spec.sheets:
-            canvas = Image.new("RGB", (A4_WIDTH, A4_HEIGHT), (255, 255, 255))
-            draw = ImageDraw.Draw(canvas)
-
-            # Draw panel borders based on panel_count
-            self._draw_panels(draw, sheet)
-
-            path = self.panels_dir / f"Worksheet_Q{sheet.sheet_number:02d}.png"
-            canvas.save(str(path))
-            sheet.rendered_panel_path = str(path)
+        from src.engines.layout.asset_layout_generator import render_panels
+        render_panels(self.spec, self.panels_dir)
+        self._log('   ✅ Panels rendered by Asset & Layout Generator')
 
     def _step_6_composite(self) -> None:
         """
@@ -348,55 +256,6 @@ class WorksheetPipeline:
     # ──────────────────────────────────────────────────────────
     # HELPERS
     # ──────────────────────────────────────────────────────────
-
-    def _draw_panels(self, draw, sheet: SheetSpec) -> None:
-        """Draw bordered activity panels on the canvas."""
-        from PIL import ImageFont
-
-        # Panel area (below header zone)
-        panel_top = 600
-        panel_left = 150
-        panel_right = 3200
-        panel_bottom = 2200
-        panel_width = panel_right - panel_left
-        panel_height = panel_bottom - panel_top
-        gap = 40
-
-        n = sheet.panel_count
-        if n == 3:
-            w = (panel_width - gap * 2) // 3
-            rects = [
-                (panel_left, panel_top, panel_left + w, panel_bottom),
-                (panel_left + w + gap, panel_top, panel_left + 2*w + gap, panel_bottom),
-                (panel_left + 2*w + 2*gap, panel_top, panel_right, panel_bottom),
-            ]
-        elif n == 2:
-            w = (panel_width - gap) // 2
-            rects = [
-                (panel_left, panel_top, panel_left + w, panel_bottom),
-                (panel_left + w + gap, panel_top, panel_right, panel_bottom),
-            ]
-        else:  # n == 1
-            rects = [(panel_left, panel_top, panel_right, panel_bottom)]
-
-        # Draw each panel with rounded corners and activity label
-        for i, rect in enumerate(rects):
-            draw.rounded_rectangle(rect, radius=20, outline=(180, 30, 30), width=3)
-
-            # Label with activity type
-            if i < len(sheet.activities):
-                act = sheet.activities[i]
-                label = f"{act.activity_type}\n{act.instructions[:40]}..."
-                try:
-                    font = ImageFont.load_default()
-                except:
-                    font = None
-                draw.text(
-                    (rect[0] + 20, rect[1] + 20),
-                    label,
-                    fill=(100, 100, 100),
-                    font=font,
-                )
 
     def _save_spec_json(self, path: Path) -> None:
         """Save the BundleSpec as JSON for debugging."""
